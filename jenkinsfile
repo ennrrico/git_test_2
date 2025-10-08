@@ -1,0 +1,95 @@
+pipeline {
+    agent any
+
+    // Definisco le variabili di ambiente riutilizzabili per l'intera pipeline.
+    environment {
+        // Sostituisci questo URL con l'URL ECR reale o un altro registro container
+        ECR_REPO = '395219229923.dkr.ecr.eu-central-1.amazonaws.com/mia-app' 
+        TAG = "latest"
+    }
+
+    stages {
+        
+        stage('Build & Containerize') {
+            steps {
+                echo 'Inizio la fase di Compilazione...'
+                
+                // 1. Compilazione del codice (es. Maven, Gradle, npm build)
+                sh 'echo "Eseguo la compilazione del codice..."'
+                // Esempio reale: sh 'mvn clean package' o sh 'npm install && npm run build'
+                
+                // 2. Costruzione dell'immagine Docker
+                // (Assicurati che Docker sia disponibile sull'agente Jenkins)
+                sh 'echo "Costruisco l\'immagine Docker..."'
+                sh "docker build -t ${ECR_REPO}:${TAG} ."
+                
+                // 3. Esempio di push su ECR (necessita di login AWS precedente)
+                sh 'echo "Immagine creata con successo."'
+            }
+        }
+        
+        // ===================================
+        // FASE 2: TEST (Test Unitari e di Integrazione)
+        // ===================================
+        stage('Test') {
+            steps {
+                echo 'Inizio la fase di Test...'
+                
+                // 1. Esecuzione dei Test Unitari
+                sh 'echo "Eseguo i test unitari..."'
+                // Esempio reale: sh 'mvn test' o sh 'npm run test:unit'
+                
+                // 2. Esecuzione dei Test di Integrazione (opzionale)
+                sh 'echo "Eseguo i test di integrazione..."'
+                
+                // ** CRITICO **: Se i test falliscono, il comando restituirà un codice di errore
+                // e Jenkins interromperà automaticamente la pipeline qui.
+                echo 'Test completati con successo.'
+            }
+        }
+        
+        // ===================================
+        // FASE 3: DEPLOY (Deployment sul Cluster EKS)
+        // ===================================
+        stage('Deploy to EKS') {
+            steps {
+                echo 'Inizio la fase di Deployment sul cluster EKS...'
+                
+                // 1. Login a ECR e Push dell'Immagine (necessario prima del deploy)
+                // Questo comando DEVE essere eseguito solo se hai un registro privato
+                // sh "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${ECR_REPO}"
+                // sh "docker push ${ECR_REPO}:${TAG}"
+
+                // 2. Aggiornamento del Kubeconfig
+                // Assicurati che l'agente Jenkins abbia configurate le credenziali AWS corrette.
+                sh 'echo "Aggiorno il kubeconfig per il cluster EKS..."'
+                sh 'aws eks update-kubeconfig --region eu-central-1 --name my-eks-cluster'
+                
+                // 3. Applicazione del manifesto Kubernetes (Deployment e Service)
+                // Questo comando aggiorna l'immagine nel Deployment esistente nel cluster.
+                sh 'echo "Applico i manifesti Kubernetes..."'
+                // Esempio: sh 'kubectl apply -f k8s/deployment.yaml'
+                
+                // Alternativa: Aggiornare solo l'immagine se il Deployment esiste
+                sh 'kubectl set image deployment/mia-app-deployment mia-app-container=${ECR_REPO}:${TAG}'
+                
+                echo 'Deployment completato con successo sul cluster EKS!'
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Esegue sempre dopo la pipeline, indipendentemente dal successo o fallimento.
+            echo 'Pipeline completata.'
+        }
+        success {
+            // Notifiche in caso di successo (es. Slack, Email)
+            echo 'Successo! Immagine distribuita.'
+        }
+        failure {
+            // Notifiche in caso di fallimento
+            echo 'ATTENZIONE: La pipeline è fallita. Controlla gli errori.'
+        }
+    }
+}
