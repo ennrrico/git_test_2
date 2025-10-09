@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mia-app-service
+spec:
+  # Crea un AWS Load Balancer (ELB) per esporre la nostra app su Internet
+  type: LoadBalancer 
+  selector:
+    app: mia-app # Deve corrispondere al label del tuo Deployment
+  ports:
+    # Porta esterna: La porta su cui il Load Balancer ascolterà
+    - port: 80 
+      # Porta interna: Mappa sulla porta del container (8080)
+      targetPort: 8080 
+      protocol: TCP
