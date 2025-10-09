@@ -63,7 +63,7 @@ pipeline {
                 // 2. Aggiornamento del Kubeconfig
                 // Assicurati che l'agente Jenkins abbia configurate le credenziali AWS corrette.
                 sh 'echo "Aggiorno il kubeconfig per il cluster EKS..."'
-                sh 'aws eks update-kubeconfig --region eu-central-1 --name my-eks-cluster'
+                sh 'aws eks update-kubeconfig --region eu-central-1 --name cluster.yaml
                 
                 // 3. Applicazione del manifesto Kubernetes (Deployment e Service)
                 // Questo comando aggiorna l'immagine nel Deployment esistente nel cluster.
