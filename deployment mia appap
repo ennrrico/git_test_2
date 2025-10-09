@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Il nome del Deployment che la pipeline Jenkins aggiornerà!
+  name: mia-app-deployment
+  labels:
+    app: mia-app
+spec:
+  # Vogliamo che EKS mantenga sempre 3 istanze (repliche) della nostra app.
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mia-app
+  template:
+    metadata:
+      labels:
+        app: mia-app
+    spec:
+      containers:
+      - name: mia-app-container
+        # Questa è l'immagine che Jenkins AGGIORNA con il comando `kubectl set image`
+        # Metti qui un valore iniziale (poi sarà Jenkins a sostituirlo)
+        image: 395219229923.dkr.ecr.eu-central-1.amazonaws.com/mia-app:placeholder
+        ports:
+        - containerPort: 8080 # La porta su cui la tua app è in ascolto all'interno del container
